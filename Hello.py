@@ -14,7 +14,8 @@
 
 import streamlit as st
 import numpy as np
-from streamlit_gsheets import GSheetsConnection
+import datetime
+import sqlite3
 import joblib
 
 
@@ -25,35 +26,54 @@ st.set_page_config(
 
 st.write("# IS5451 Group06 Final Project 👋")
 
+conn = sqlite3.connect("weather.db")
 
-# Create a connection object.
-# conn = st.connection("gsheets", type=GSheetsConnection)
 
-# df = conn.read()
-# # Print results.
-# for row in df.itertuples():
-#     st.write(f"{row.name} has a :{row.pet}:")
+def create_table():
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS weather (temp REAL, humidity REAL, dt TEXT)"
+    )
+
+
+create_table()
+
+
+def random_time():
+    res = datetime.datetime.now() - datetime.timedelta(
+        seconds=np.random.randint(0, 60 * 60 * 24 * 90)
+    )
+    return res.strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_data():
-    temperature = np.random.uniform(24.5, 29.0)
-    wind_speed = np.random.uniform(5.9, 20.5)
-    return temperature, wind_speed
+    temp = np.random.uniform(24.8, 30.3)
+    humidity = np.random.uniform(65.5, 93.6)
+    dt = random_time()
+    with conn:
+        conn.execute(
+            "INSERT INTO weather (temp, humidity, dt) VALUES (?, ?, ?)",
+            (temp, humidity, dt),
+        )
+    return temp, humidity, dt
 
 
-# load the model
 model = joblib.load("model.joblib")
 
 
-# create a function that takes the temperature and wind speed as input and returns the probability of rain
-def predict_rain(temperature, wind_speed):
-    return model.predict_proba([[temperature, wind_speed]])[0][1]
+def predict_rain(temp, humidity):
+    prob = model.predict_proba([[temp, humidity]])[0][1]
+    return prob
 
 
-# st.button("Get Current Data", key=1)
 if st.button("Get Current Data", key=1):
-    t, w = get_data()
+    t, h, dt = get_data()
     st.write(f"Temperature: {t:.2f}°C")
-    st.write(f"Wind Speed: {w:.2f} km/h")
-    prob = predict_rain(t, w)
+    st.write(f"Humidity: {h:.2f}%")
+    prob = predict_rain(t, h)
     st.write(f"Probability of Rain: {prob*100:.2f} %")
+
+if st.button("Get Historical Data", key=2):
+    data = conn.execute("SELECT * FROM weather")
+    # st.table(data) with header
+    st.write("temp, humidity, dt")
+    st.table(data.fetchall())
