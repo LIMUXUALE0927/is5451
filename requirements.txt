@@ -1,6 +1,7 @@
-altair
 numpy
 pandas
 pydeck
 streamlit
 st-gsheets-connection
+scikit-learn
+joblib
