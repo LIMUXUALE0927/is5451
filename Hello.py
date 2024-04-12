@@ -77,3 +77,6 @@ if st.button("Get Historical Data", key=2):
     # st.table(data) with header
     st.write("temp, humidity, dt")
     st.table(data.fetchall())
+
+if st.button("烘干？", key=3):
+    st.write("烘干！")
